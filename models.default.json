@@ -1,0 +1,10 @@
+[
+  {"repo": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice", "backend": "qwen3_tts"},
+  {"repo": "Qwen/Qwen3-TTS-12Hz-1.7B-Base", "backend": "qwen3_tts"},
+  {"repo": "k2-fsa/OmniVoice", "backend": "omnivoice"},
+  {"repo": "openbmb/VoxCPM2", "backend": "voxcpm"},
+  {"repo": "bosonai/higgs-tts-3-4b", "backend": "higgs_tts"},
+  {"repo": "mistralai/Voxtral-4B-TTS-2603", "backend": "voxtral_tts",
+   "download": ["consolidated.safetensors", "params.json", "tekken.json", "voice_embedding/*"]},
+  {"repo": "facebook/mms-tts-eng", "backend": "hf_pipeline"}
+]

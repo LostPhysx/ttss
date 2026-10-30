@@ -1,0 +1,15 @@
+# Main env (.tools/venv): web server + the in-process backends (hf_pipeline, voxtral_tts) + scripts.
+# torch / torchaudio come from the CUDA index (see setup.ps1). Other backends get their own envs.
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+transformers==5.22.1
+accelerate==1.15.0
+huggingface_hub==2.4.0
+soundfile==0.14.0
+numpy==2.3.5
+scipy==1.17.1
+sentencepiece==0.2.2
+mistral_common==1.13.0
+bitsandbytes==0.50.2
+safetensors==0.8.0

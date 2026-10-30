@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTSS</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e2e2dd;
+    --accent: #2f6fdf; --accent-ink: #fff; --ok: #1f8a4c; --warn: #b7791f; --err: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141414; --panel: #1d1d1d; --ink: #ececea; --muted: #9a9a94; --line: #2e2e2c;
+      --accent: #5b8ff0; --accent-ink: #fff; --ok: #4cc27f; --warn: #e0a84a; --err: #ef6b5d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
+  .muted { color: var(--muted); font-size: 13px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+            padding: 16px; margin-bottom: 14px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=text], input[type=number], select, textarea {
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 7px;
+    padding: 8px 10px; font: inherit; min-width: 0;
+  }
+  input[type=text]:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  #modelInput, #modelSel { flex: 1 1 300px; }
+  .lbl { font-weight: 600; }
+  details summary { cursor: pointer; margin-top: 10px; }
+  textarea { width: 100%; min-height: 140px; resize: vertical; }
+  button { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 7px;
+           padding: 8px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .status { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ready { background: var(--ok); } .dot.loading { background: var(--warn); animation: pulse 1s infinite; }
+  .dot.error { background: var(--err); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 99px;
+          font-size: 13px; overflow: hidden; }
+  .chip span { padding: 3px 4px 3px 10px; cursor: pointer; }
+  .chip span:hover { color: var(--accent); }
+  .chip small { color: var(--muted); padding-right: 6px; }
+  .chip b { padding: 3px 9px 3px 4px; cursor: pointer; color: var(--muted); font-weight: 400; }
+  .chip b:hover { color: var(--err); }
+  #params { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  #params:empty { display: none; }
+  #params label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  #params label.wide { grid-column: 1 / -1; }
+  #params label.check { flex-direction: row; align-items: center; gap: 6px; }
+  .gen-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; }
+  audio { width: 100%; }
+  .item { border-top: 1px solid var(--line); padding: 10px 0; }
+  .item:first-child { border-top: 0; padding-top: 0; }
+  .item .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .item .txt { font-size: 13px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item a, .samples a { color: var(--accent); }
+  .err { color: var(--err); font-size: 14px; white-space: pre-wrap; }
+  #history:empty::before { content: "Generated audio will appear here."; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>TTSS</h1>
+    <span class="muted" id="gpu"></span>
+  </header>
+
+  <section>
+    <div class="row">
+      <label for="modelSel" class="lbl">Model</label>
+      <select id="modelSel"></select>
+      <button id="loadSelBtn">Load</button>
+      <button id="unloadBtn" class="ghost">Unload</button>
+      <button id="forgetBtn" class="ghost" title="Remove from this list">Remove</button>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">No model loaded</span></div>
+    <details id="addBox">
+      <summary class="muted">Add a model from Hugging Face</summary>
+      <div class="row" style="margin-top:8px">
+        <input id="modelInput" type="text" placeholder="Hugging Face URL or org/model">
+        <select id="backendSel" title="Backend"><option value="">Auto-detect</option></select>
+        <button id="loadBtn">Load</button>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <div id="params"></div>
+    <textarea id="text" placeholder="Type something to say...">Hello! This is a quick test of local text to speech running on my GPU.</textarea>
+    <div class="gen-row">
+      <span class="muted samples">Samples:
+        <a href="#" data-sample="en">English (short)</a> ·
+        <a href="#" data-sample="en_adv">English: adventure (~30 s)</a> ·
+        <a href="#" data-sample="de">Deutsch: Abenteuer (~30 s)</a>
+        · Ctrl+Enter to generate</span>
+      <button id="genBtn" disabled>Generate</button>
+    </div>
+    <div class="err" id="genErr"></div>
+  </section>
+
+  <section id="history"></section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let state = {}, paramsKey = "", pollTimer = null, busy = false;
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  if (!r.ok) {
+    let msg = r.statusText;
+    try { msg = (await r.json()).detail || msg; } catch {}
+    throw new Error(msg);
+  }
+  return r;
+}
+
+async function refresh() {
+  state = await (await api("/api/state")).json();
+  render();
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(refresh, state.status === "loading" ? 700 : 4000);
+}
+
+function render() {
+  const s = state;
+  $("dot").className = "dot " + s.status;
+  const label = s.repo ? `${s.repo}${s.backend ? " · " + s.backend : ""}` : "No model loaded";
+  $("statusText").textContent = s.status === "idle" ? "No model loaded"
+    : `${label}${s.message ? " — " + s.message : ""}`;
+  $("loadBtn").disabled = s.status === "loading";
+  $("genBtn").disabled = s.status !== "ready" || busy;
+  if (s.gpu) $("gpu").textContent = s.gpu.total_mb
+    ? `${s.gpu.name} · ${(s.gpu.used_mb/1024).toFixed(1)} / ${(s.gpu.total_mb/1024).toFixed(1)} GB` : s.gpu.name;
+
+  const sel = $("backendSel");
+  if (sel.options.length === 1) for (const b of s.backends) sel.add(new Option(b.name, b.name));
+  [...sel.options].forEach(o => { if (o.value) o.title = (s.backends.find(b => b.name === o.value) || {}).description || ""; });
+
+  // saved-model dropdown: rebuild only when the list changes, keep the user's selection
+  const ms = $("modelSel");
+  const listKey = JSON.stringify(s.models);
+  if (ms.dataset.key !== listKey) {
+    const keep = ms.value;
+    ms.innerHTML = "";
+    for (const m of s.models) ms.add(new Option(`${m.repo}  (${m.backend})`, m.repo));
+    ms.value = keep && s.models.some(m => m.repo === keep) ? keep : (s.repo || s.models[0]?.repo || "");
+    ms.dataset.key = listKey;
+  }
+  if (s.repo && s.status !== "idle" && ms.dataset.loaded !== s.repo) { ms.value = s.repo; ms.dataset.loaded = s.repo; }
+  $("loadSelBtn").disabled = s.status === "loading" || !ms.value;
+  $("loadSelBtn").textContent = s.status === "ready" && ms.value === s.repo ? "Loaded" : "Load";
+
+  const key = s.status + s.repo + JSON.stringify(s.params);
+  if (key !== paramsKey) { paramsKey = key; renderParams(s.params || []); }
+}
+
+function renderParams(params) {
+  const box = $("params");
+  box.innerHTML = "";
+  for (const p of params) {
+    const lab = document.createElement("label");
+    let el;
+    if (p.kind === "select") {
+      el = document.createElement("select");
+      const groups = {};
+      for (const c of p.choices) {
+        const o = typeof c === "object" ? c : { value: c, label: c };
+        const opt = new Option(o.label ?? o.value, o.value);
+        if (o.group) {
+          if (!groups[o.group]) { groups[o.group] = document.createElement("optgroup"); groups[o.group].label = o.group; el.appendChild(groups[o.group]); }
+          groups[o.group].appendChild(opt);
+        } else el.add(opt);
+      }
+      if (p.default != null) el.value = p.default;
+    } else if (p.kind === "checkbox") {
+      el = document.createElement("input"); el.type = "checkbox"; el.checked = !!p.default;
+      lab.className = "check";
+    } else if (p.kind === "audio") {
+      el = document.createElement("input"); el.type = "file"; el.accept = "audio/*";
+      lab.className = "wide";
+    } else if (p.kind === "textarea") {
+      el = document.createElement("textarea"); el.style.minHeight = "60px"; el.value = p.default ?? "";
+      lab.className = "wide";
+    } else {
+      el = document.createElement("input");
+      el.type = p.kind === "number" ? "number" : "text";
+      for (const k of ["min", "max", "step"]) if (p[k] != null) el[k] = p[k];
+      el.value = p.default ?? "";
+    }
+    el.dataset.name = p.name; el.dataset.kind = p.kind;
+    if (p.help) lab.title = p.help;
+    const t = document.createElement("span"); t.textContent = p.label;
+    if (p.kind === "checkbox") lab.append(el, t); else lab.append(t, el);
+    box.appendChild(lab);
+  }
+}
+
+async function load(model, backend = "") {
+  if (!model) return;
+  $("modelInput").value = model;
+  try {
+    await api("/api/load", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, backend: backend || $("backendSel").value || null }) });
+  } catch (e) { alert(e.message); }
+  refresh();
+}
+
+async function generate() {
+  if (busy || state.status !== "ready") return;
+  const text = $("text").value.trim();
+  if (!text) return;
+  busy = true; $("genBtn").disabled = true; $("genBtn").textContent = "Generating..."; $("genErr").textContent = "";
+  const fd = new FormData();
+  fd.append("text", text);
+  const params = {};
+  for (const el of $("params").querySelectorAll("[data-name]")) {
+    const n = el.dataset.name, k = el.dataset.kind;
+    if (k === "audio") { if (el.files[0]) fd.append(n, el.files[0]); }
+    else if (k === "checkbox") params[n] = el.checked;
+    else if (k === "number") { if (el.value !== "") params[n] = Number(el.value); }
+    else params[n] = el.value;
+  }
+  fd.append("params", JSON.stringify(params));
+  try {
+    const r = await api("/api/tts", { method: "POST", body: fd });
+    const blob = await r.blob();
+    addHistory(blob, text, r.headers.get("X-Filename"), r.headers.get("X-Duration"), r.headers.get("X-Elapsed"),
+               decodeURIComponent(r.headers.get("X-Info") || ""));
+  } catch (e) { $("genErr").textContent = e.message; }
+  busy = false; $("genBtn").textContent = "Generate"; render();
+}
+
+function addHistory(blob, text, name, dur, elapsed, info) {
+  const url = URL.createObjectURL(blob);
+  const item = document.createElement("div");
+  item.className = "item";
+  item.innerHTML = `<div class="meta"><span class="m"></span><a download>Download</a></div><div class="txt"></div><audio controls></audio>`;
+  item.querySelector(".m").textContent = `${state.repo} · ${dur}s audio in ${elapsed}s${info ? " · " + info : ""}`;
+  item.querySelector(".txt").textContent = text;
+  item.querySelector(".txt").title = text;
+  const a = item.querySelector("a"); a.href = url; a.download = name || "tts.wav";
+  const au = item.querySelector("audio"); au.src = url;
+  document.querySelectorAll("#history audio").forEach(x => x.pause());
+  $("history").prepend(item);
+  au.play().catch(() => {});
+}
+
+const SAMPLES = {
+  en: "Hello! This is a quick test of local text to speech running on my GPU.",
+  en_adv: "The storm had driven us across the open sea for three days when land finally came into view. " +
+      "Captain Hansen stood at the bow, the telescope pressed firmly to his eye. “There,” he called hoarsely, " +
+      "“behind the cliffs lies the bay from the old map!” We rowed ashore at dawn. The jungle was quiet, far too " +
+      "quiet. Among the ferns we discovered footprints, fresh and pressed deep into the damp ground. Someone had " +
+      "been here before us. And whoever it was, they were searching for the same treasure.",
+  de: "Der Sturm hatte uns drei Tage lang über das offene Meer getrieben, als endlich Land in Sicht kam. " +
+      "Kapitän Hansen stand am Bug, das Fernrohr fest vor dem Auge. „Dort“, rief er heiser, „hinter den Klippen " +
+      "liegt die Bucht aus der alten Karte!“ Wir ruderten im Morgengrauen an Land. Der Dschungel war still, viel zu " +
+      "still. Zwischen den Farnen entdeckten wir Fußspuren, frisch und tief in den feuchten Boden gedrückt. Jemand " +
+      "war vor uns hier gewesen. Und wer immer es war, er suchte denselben Schatz.",
+};
+document.querySelectorAll("[data-sample]").forEach(a => a.onclick = (e) => {
+  e.preventDefault(); $("text").value = SAMPLES[a.dataset.sample]; $("text").focus();
+});
+$("loadBtn").onclick = () => load($("modelInput").value.trim());
+$("modelSel").onchange = () => render();
+$("loadSelBtn").onclick = () => {
+  const m = state.models.find(x => x.repo === $("modelSel").value);
+  if (m && !(state.status === "ready" && m.repo === state.repo)) load(m.repo, m.backend);
+};
+$("forgetBtn").onclick = async () => {
+  const repo = $("modelSel").value;
+  if (repo && confirm(`Remove ${repo} from the list? (Downloaded files stay on disk.)`)) {
+    await api("/api/models?repo=" + encodeURIComponent(repo), { method: "DELETE" }); refresh();
+  }
+};
+$("modelInput").onkeydown = (e) => { if (e.key === "Enter") load($("modelInput").value.trim()); };
+$("unloadBtn").onclick = async () => { await api("/api/unload", { method: "POST" }); refresh(); };
+$("genBtn").onclick = generate;
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); generate(); } });
+refresh();
+</script>
+</body>
+</html>

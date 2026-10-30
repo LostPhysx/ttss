@@ -1,0 +1,25 @@
+TTSS
+Copyright 2026 LostPhysx
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes code derived from the following Apache-2.0 licensed projects:
+
+* vLLM-Omni (https://github.com/vllm-project/vllm-omni)
+  Copyright contributors to the vLLM-Omni project.
+  app/backends/_voxtral_model.py is a standalone PyTorch port of
+  vllm_omni/model_executor/models/voxtral_tts/*.
+
+* SGLang-Omni (https://github.com/sgl-project/sglang-omni)
+  Copyright the SGLang-Omni authors.
+  app/backends/_higgs_tts_model.py is a standalone PyTorch port of the reference
+  path in sglang_omni/models/higgs_tts.
+
+Example voice clips that the higgs_tts backend downloads at runtime come from
+boson-ai/higgs-audio and sgl-project/sglang-omni (both Apache-2.0); they are not
+included in this repository.
+
+MODEL WEIGHTS ARE NOT PART OF THIS REPOSITORY. They are downloaded from Hugging Face
+at runtime and remain under their own licenses, several of which are non-commercial
+(e.g. Voxtral-4B-TTS: CC BY-NC 4.0, OmniVoice: CC BY-NC, Higgs TTS 3: Boson research
+and non-commercial license, MMS-TTS: CC BY-NC 4.0). Check each model card before use.

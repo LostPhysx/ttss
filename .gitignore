@@ -1,0 +1,13 @@
+# everything downloaded or built locally (uv, Python, envs, model weights, logs)
+/.tools/
+# generated audio
+/outputs/
+# your personal model list (models.default.json is the shipped one)
+models.json
+__pycache__/
+*.pyc
+*.wav
+*.log
+.venv/
+.vscode/
+.idea/
